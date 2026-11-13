@@ -7,10 +7,6 @@ import org.springframework.stereotype.Repository;
 
 import com.example.beta_1_Bizti.models.Categoria;
 
-@Repository 
-public interface IRepositorioCategoria extends JpaRepository <Categoria, UUID>{
-
-    
-} 
-    
-
+@Repository
+public interface IRepositorioCategoria extends JpaRepository<Categoria, UUID> {
+}

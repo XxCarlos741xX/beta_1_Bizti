@@ -22,7 +22,7 @@ jobs:
         working-directory: beta_1_Bizti
         run: |
           nohup java -jar target/beta_1_Bizti-0.0.1-SNAPSHOT.jar --spring.datasource.url=jdbc:h2:mem:ci > ../backend.log 2>&1 &
-          for i in $(seq 1 60); do curl -s localhost:8080/api/empresas >/dev/null && exit 0; sleep 2; done
+          for i in $(seq 1 60); do curl -s localhost:8080/api/v1/empresas >/dev/null && exit 0; sleep 2; done
           cat ../backend.log; exit 1
 
       - name: Postman (newman)
@@ -33,15 +33,27 @@ jobs:
         run: |
           pkill -f beta_1_Bizti-0.0.1-SNAPSHOT.jar || true; sleep 3
           nohup java -jar target/beta_1_Bizti-0.0.1-SNAPSHOT.jar --spring.datasource.url=jdbc:h2:mem:ci2 > ../backend2.log 2>&1 &
-          for i in $(seq 1 60); do curl -s localhost:8080/api/empresas >/dev/null && exit 0; sleep 2; done
+          for i in $(seq 1 60); do curl -s localhost:8080/api/v1/empresas >/dev/null && exit 0; sleep 2; done
           exit 1
 
       - name: Funciones del frontend (api.js) contra el backend real
         run: node pruebas/prueba-front.mjs "$PWD/frontend-bizti"
 
+      - name: Casos de la revision (validacion, limites, formatos y reglas)
+        run: |
+          pkill -f beta_1_Bizti-0.0.1-SNAPSHOT.jar || true; sleep 3
+          (cd beta_1_Bizti && nohup java -jar target/beta_1_Bizti-0.0.1-SNAPSHOT.jar --spring.datasource.url=jdbc:h2:mem:ci3 > ../backend3.log 2>&1 &)
+          for i in $(seq 1 60); do curl -s localhost:8080/api/v1/empresas >/dev/null && break; sleep 2; done
+          node pruebas/prueba-casos.mjs
+
+      - name: Swagger / OpenAPI
+        run: |
+          curl -sf localhost:8080/v3/api-docs | head -c 300; echo
+          curl -sf -o /dev/null -L localhost:8080/swagger-ui.html && echo "swagger-ui OK"
+
       - name: CORS desde localhost:5173
         run: |
-          curl -s -o /dev/null -D cors.txt -X OPTIONS localhost:8080/api/retos \
+          curl -s -o /dev/null -D cors.txt -X OPTIONS localhost:8080/api/v1/retos \
             -H 'Origin: http://localhost:5173' -H 'Access-Control-Request-Method: POST'
           cat cors.txt
           grep -qi 'access-control-allow-origin: http://localhost:5173' cors.txt
@@ -52,4 +64,4 @@ jobs:
 
       - name: Log del backend
         if: always()
-        run: cat backend.log backend2.log 2>/dev/null | tail -150
+        run: cat backend.log backend2.log backend3.log 2>/dev/null | tail -150

@@ -1,7 +1,8 @@
 import { servirDemo } from './mock.js'
 
-// URL por defecto del backend Spring Boot (beta_1_Bizti)
+// URL por defecto del backend Spring Boot (beta_1_Bizti) y version de la API
 export const URL_POR_DEFECTO = 'http://localhost:8080'
+const API = '/api/v1'
 
 // Modo demo: no se llama a ningun servidor, se usa el backend simulado de mock.js
 const CLAVE_MODO = 'bizti_modo_demo'
@@ -36,7 +37,7 @@ function mensajeDeError(json, status) {
 // Peticion "cruda" a /api/<ruta>
 export async function llamar(baseUrl, metodo, ruta, cuerpo) {
   const demo = esModoDemo()
-  const url = demo ? `demo://api/${ruta}` : `${baseUrl.replace(/\/+$/, '')}/api/${ruta}`
+  const url = demo ? `demo://api/${ruta}` : `${baseUrl.replace(/\/+$/, '')}${API}/${ruta}`
   let log = `${metodo} ${url}${demo ? ' (modo demo, sin backend)' : ''}` + (cuerpo ? `\n${JSON.stringify(cuerpo, null, 2)}` : '')
   let status, estadoTexto = '', crudo
   if (demo) {
@@ -60,7 +61,7 @@ export async function llamar(baseUrl, metodo, ruta, cuerpo) {
   try { json = crudo ? JSON.parse(crudo) : null } catch { /* no era JSON */ }
   log += `\n\n← ${status} ${estadoTexto}\n${json != null ? JSON.stringify(json, null, 2) : crudo}`.trimEnd()
   if (status >= 400) throw new ErrorApi(mensajeDeError(json, status), log)
-  // Spring devuelve el objeto o la lista tal cual (DELETE devuelve true).
+  // Spring devuelve el objeto, o una pagina { content, page } en los listados; DELETE responde 204 sin cuerpo.
   // El modo demo envuelve algunas respuestas como { data }.
   const envuelto = json && typeof json === 'object' && !Array.isArray(json) && 'data' in json
   return { datos: envuelto ? json.data : json, log }
@@ -119,12 +120,18 @@ const deSpring = (recurso, fila) => (fila && DE_SPRING[recurso] ? DE_SPRING[recu
 export const RUTAS = ['empresas', 'categorias', 'prioridades', 'usuarios', 'retos', 'registros']
 
 // Trae las seis tablas. Spring no tiene /api/data, asi que se piden en paralelo.
+// Los listados son paginados: se pide una pagina grande y se toma "content".
+const TAMANO_PAGINA = 1000
 export async function cargarTodo(baseUrl) {
   if (esModoDemo()) return llamar(baseUrl, 'GET', 'data')
-  const respuestas = await Promise.all(RUTAS.map((r) => llamar(baseUrl, 'GET', r)))
+  const respuestas = await Promise.all(RUTAS.map((r) => llamar(baseUrl, 'GET', `${r}?size=${TAMANO_PAGINA}`)))
   const datos = {}
-  RUTAS.forEach((r, i) => { datos[r] = (respuestas[i].datos || []).map((f) => deSpring(r, f)) })
-  const log = RUTAS.map((r, i) => `GET ${baseUrl.replace(/\/+$/, '')}/api/${r}  ← 200 (${datos[r].length} filas)`).join('\n')
+  RUTAS.forEach((r, i) => {
+    const d = respuestas[i].datos
+    const filas = Array.isArray(d) ? d : d?.content || []
+    datos[r] = filas.map((f) => deSpring(r, f))
+  })
+  const log = RUTAS.map((r, i) => `GET ${baseUrl.replace(/\/+$/, '')}${API}/${r}?size=${TAMANO_PAGINA}  ← 200 (${datos[r].length} filas)`).join('\n')
   return { datos, log }
 }
 

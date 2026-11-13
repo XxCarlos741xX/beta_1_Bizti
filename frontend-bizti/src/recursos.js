@@ -4,13 +4,13 @@
 // t "check" = casilla si/no. oculto = no se muestra en la tabla.
 // soloCrear = obligatorio al crear, opcional al editar (ej. la contrasena).
 // La traduccion a los nombres de Spring (fecha_inicio, "empresa": {id}...) esta en api.js.
-// Los "max" son los length de las columnas en los modelos de Spring.
+// Los "max" son los @Size de los DTO de Spring.
 export const RECURSOS = {
   empresas: {
     titulo: 'Empresas',
     campos: [
       { n: 'nombre', t: 'text', max: 50 },
-      { n: 'nit', t: 'text', max: 255 },
+      { n: 'nit', t: 'text', max: 30 },
       { n: 'sector', t: 'text', max: 100 },
       { n: 'contacto', t: 'text', max: 100 },
       { n: 'correo', t: 'email', max: 150 },
@@ -21,8 +21,8 @@ export const RECURSOS = {
   categorias: {
     titulo: 'Categorías',
     campos: [
-      { n: 'nombre', t: 'text', max: 100 },
-      { n: 'descripcion', t: 'text' },
+      { n: 'nombre', t: 'text', max: 255 },
+      { n: 'descripcion', t: 'text', max: 255 },
     ],
   },
   prioridades: {

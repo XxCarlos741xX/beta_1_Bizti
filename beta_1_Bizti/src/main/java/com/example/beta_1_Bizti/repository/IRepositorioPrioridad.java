@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository;
 
 import com.example.beta_1_Bizti.models.Prioridad;
 
-@Repository 
+@Repository
 public interface IRepositorioPrioridad extends JpaRepository<Prioridad, UUID> {
-
 }

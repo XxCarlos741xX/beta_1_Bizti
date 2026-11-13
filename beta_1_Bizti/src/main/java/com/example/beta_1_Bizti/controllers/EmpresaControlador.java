@@ -1,9 +1,12 @@
 package com.example.beta_1_Bizti.controllers;
 
+import java.net.URI;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,39 +16,58 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.example.beta_1_Bizti.models.Empresa;
-import com.example.beta_1_Bizti.services.ServiciosEmpresa;
+import com.example.beta_1_Bizti.dto.EmpresaRequestDto;
+import com.example.beta_1_Bizti.dto.EmpresaResponseDto;
+import com.example.beta_1_Bizti.services.EmpresaService;
 
-@RestController 
-@RequestMapping("/api/empresas")
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/api/v1/empresas")
+@Tag(name = "empresas", description = "Empresas que publican retos")
 public class EmpresaControlador {
 
-    @Autowired 
-    ServiciosEmpresa servicio;
+    private final EmpresaService servicio;
 
-    //Controlador para guardar
-    @PostMapping 
-    public ResponseEntity<?> guardar(@RequestBody Empresa datos){
-        return ResponseEntity.status(HttpStatus.OK).body(servicio.guardarEmpresa(datos));
+    public EmpresaControlador(EmpresaService servicio) {
+        this.servicio = servicio;
     }
 
-    //Controlador para buscar
     @GetMapping
-    public ResponseEntity<?> buscar(){
-        return ResponseEntity.status(HttpStatus.OK).body(servicio.buscar());
+    @Operation(summary = "Listar (paginado): ?page=0&size=20&sort=nombre,asc")
+    public Page<EmpresaResponseDto> listar(@PageableDefault(size = 20, sort = "nombre", direction = Sort.Direction.ASC) Pageable pageable) {
+        return servicio.listar(pageable);
     }
 
-    //Controlador para modificar
+    @GetMapping("/{id}")
+    @Operation(summary = "Buscar por id")
+    public EmpresaResponseDto buscar(@PathVariable UUID id) {
+        return servicio.buscarPorId(id);
+    }
+
+    @PostMapping
+    @Operation(summary = "Crear (201 + Location)")
+    public ResponseEntity<EmpresaResponseDto> crear(@Valid @RequestBody EmpresaRequestDto dto) {
+        EmpresaResponseDto creado = servicio.crear(dto);
+        URI ubicacion = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(creado.id()).toUri();
+        return ResponseEntity.created(ubicacion).body(creado);
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<?> modificar(@PathVariable UUID id, @RequestBody Empresa datos){
-        return  ResponseEntity.status(HttpStatus.OK).body(servicio.modificar(id, datos));
+    @Operation(summary = "Modificar")
+    public EmpresaResponseDto modificar(@PathVariable UUID id, @Valid @RequestBody EmpresaRequestDto dto) {
+        return servicio.modificar(id, dto);
     }
 
-    //Controlador para eliminar
-    @DeleteMapping ("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable  UUID id){
-        return ResponseEntity.status(HttpStatus.OK).body(servicio.eliminar(id));
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Eliminar (204)")
+    public ResponseEntity<Void> eliminar(@PathVariable UUID id) {
+        servicio.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
-
 }

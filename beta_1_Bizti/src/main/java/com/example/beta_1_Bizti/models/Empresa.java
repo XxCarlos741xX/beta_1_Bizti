@@ -1,18 +1,15 @@
 package com.example.beta_1_Bizti.models;
 
-import java.util.List;
 import java.util.UUID;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+// Entidad JPA: solo mapea la tabla. La API usa DTOs (paquete dto), nunca esta clase.
 @Entity
 @Table(name = "empresas")
 public class Empresa {
@@ -40,14 +37,10 @@ public class Empresa {
     private String telefono;
 
     @Column(nullable = false)
-    private Boolean activa = true;
+    private Boolean activa;
 
-    // Constructor vacío requerido por JPA
     public Empresa() {
-
     }
-
-    // Getters y Setters
 
     public UUID getId() {
         return id;
@@ -112,18 +105,4 @@ public class Empresa {
     public void setActiva(Boolean activa) {
         this.activa = activa;
     }
-
-    @OneToMany (mappedBy = "empresa")
-    @JsonIgnore
-    private List <Reto> retos;
-
-    public List<Reto> getRetos() {
-        return retos;
-    }
-
-    public void setRetos(List<Reto> retos) {
-        this.retos = retos;
-    }
-
 }
-
