@@ -59,7 +59,7 @@ Los datos quedan en `C:\Users\<usuario>\bizti-data\`; para empezar de cero, apag
 7. Los `modificar` de Empresa, Reto y Registro solo actualizaban 1 o 2 campos; ahora actualizan todos.
 8. `ServiciosReto` / `ServiciosRegistros` buscan por `id` la empresa, categoría, prioridad, reto y usuario
    que llegan en el JSON (404 si no existen).
-9. `config/ManejadorErrores.java`: dato repetido o borrar algo con datos asociados → **409** con mensaje (antes 500).
+9. `config/ManejadorErrores.java`: dato repetido o borrar algo con datos asociados → **409** con mensaje (antes 500), y los 400/401/404 de los servicios siempre traen `message` (en Spring Boot 4 `server.error.include-message` no lo garantizaba).
 10. `config/CorsConfig.java`: permite al front en `localhost:*`.
 11. `application.properties`: H2 en archivo + consola H2 + mensajes de error en la respuesta.
     Las pruebas (`src/test/resources`) usan H2 en memoria.
