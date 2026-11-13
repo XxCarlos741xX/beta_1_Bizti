@@ -4,7 +4,7 @@ package com.example.beta_1_Bizti.models;
 import java.util.List;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,7 +29,7 @@ private String nombre;
 private String descripcion;
 
 @OneToMany(mappedBy = "categoria")
-@JsonBackReference("Reto_categoria")
+@JsonIgnore
 private List<Reto> retos;
 
 //Constructor

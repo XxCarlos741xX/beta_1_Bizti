@@ -3,8 +3,6 @@ package com.example.beta_1_Bizti.models;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,26 +22,23 @@ public class Reto {
     private String nombre;
     @Column(name = "descripcion",nullable = true, unique = false, length = 200)
     private String descripcion;
-    @Column(name = "fecha inicio", nullable = false, unique = false)
+    @Column(name = "fecha_inicio", nullable = false, unique = false)
     private LocalDate fecha_inicio;
-    @Column(name = "fecha fin", nullable = false, unique = false)
+    @Column(name = "fecha_fin", nullable = false, unique = false)
     private LocalDate fecha_fin;
     @Column(name = "estado", nullable = false, unique = false, length = 50)
     private String estado;
     
     @ManyToOne 
     @JoinColumn(name="fk_empresa")
-    @JsonBackReference ("empresa_reto")
     private Empresa empresa;
 
     @ManyToOne
     @JoinColumn(name="fk_categoria")
-    @JsonBackReference("reto_categoria")
     private Categoria categoria;
 
     @ManyToOne 
     @JoinColumn(name="fk_prioridad")
-    @JsonBackReference("reto_prioridad")
     private Prioridad prioridad;
 
 
@@ -83,5 +78,24 @@ public class Reto {
     public void setEstado(String estado) {
         this.estado = estado;
     }
-    
+
+    public Empresa getEmpresa() {
+        return empresa;
+    }
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
+    }
+    public Categoria getCategoria() {
+        return categoria;
+    }
+    public void setCategoria(Categoria categoria) {
+        this.categoria = categoria;
+    }
+    public Prioridad getPrioridad() {
+        return prioridad;
+    }
+    public void setPrioridad(Prioridad prioridad) {
+        this.prioridad = prioridad;
+    }
+
 }

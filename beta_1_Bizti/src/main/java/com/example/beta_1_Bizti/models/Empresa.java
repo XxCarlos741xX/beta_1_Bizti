@@ -3,7 +3,7 @@ package com.example.beta_1_Bizti.models;
 import java.util.List;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,13 +24,13 @@ public class Empresa {
     @Column(nullable = false, length = 50)
     private String nombre;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String nit;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String sector;
 
-    @Column(nullable = false, unique = true, length = 10)
+    @Column(nullable = false, length = 100)
     private String contacto;
 
     @Column(nullable = false, unique = true, length = 150)
@@ -114,8 +114,16 @@ public class Empresa {
     }
 
     @OneToMany (mappedBy = "empresa")
-    @JsonManagedReference ("reto_empresa")
+    @JsonIgnore
     private List <Reto> retos;
+
+    public List<Reto> getRetos() {
+        return retos;
+    }
+
+    public void setRetos(List<Reto> retos) {
+        this.retos = retos;
+    }
 
 }
 

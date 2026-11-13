@@ -38,7 +38,12 @@ public Empresa modificar(UUID id, Empresa datosNuevos){
 
         //Modificando los datos
         empresaEncontrado.setNombre(datosNuevos.getNombre());
+        empresaEncontrado.setNit(datosNuevos.getNit());
+        empresaEncontrado.setSector(datosNuevos.getSector());
+        empresaEncontrado.setContacto(datosNuevos.getContacto());
         empresaEncontrado.setCorreo(datosNuevos.getCorreo());
+        empresaEncontrado.setTelefono(datosNuevos.getTelefono());
+        empresaEncontrado.setActiva(datosNuevos.getActiva());
 
         //Guardo los cambios
         return

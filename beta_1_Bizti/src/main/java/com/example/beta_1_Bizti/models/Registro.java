@@ -4,8 +4,6 @@ package com.example.beta_1_Bizti.models;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -32,17 +30,15 @@ public class Registro {
   @Column(name="estado", nullable=false, length = 50)
   private String estado;
 
-  // --- RELACIÓN CON USUARIO ---
-  @ManyToOne
-  @JoinColumn(name = "id_usuario")
-  @JsonBackReference(value = "usuario-registro") 
-  private Usuario usuario;
-
   // --- RELACIÓN CON RETO ---
   @ManyToOne
   @JoinColumn(name = "id_reto")
-  @JsonBackReference(value = "reto-registro") 
   private Reto reto;
+
+  // --- RELACIÓN CON USUARIO ---
+  @ManyToOne
+  @JoinColumn(name = "id_usuario")
+  private Usuario usuario;
 
   // Constructor vacio
       public Registro() {
@@ -74,16 +70,16 @@ public class Registro {
   public void setEstado(String estado) {
     this.estado = estado;
   }
-  public Usuario getUsuario() {
-    return usuario;
-  }
-  public void setUsuario(Usuario usuario) {
-    this.usuario = usuario;
-  }
   public Reto getReto() {
     return reto;
   }
   public void setReto(Reto reto) {
     this.reto = reto;
+  }
+  public Usuario getUsuario() {
+    return usuario;
+  }
+  public void setUsuario(Usuario usuario) {
+    this.usuario = usuario;
   }
 }

@@ -1,0 +1,55 @@
+name: Pruebas backend + frontend
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17', cache: maven }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Compilar backend y prueba contextLoads
+        working-directory: beta_1_Bizti
+        run: chmod +x mvnw && ./mvnw -B package
+
+      - name: Levantar backend (H2 en memoria)
+        working-directory: beta_1_Bizti
+        run: |
+          nohup java -jar target/beta_1_Bizti-0.0.1-SNAPSHOT.jar --spring.datasource.url=jdbc:h2:mem:ci > ../backend.log 2>&1 &
+          for i in $(seq 1 60); do curl -s localhost:8080/api/empresas >/dev/null && exit 0; sleep 2; done
+          cat ../backend.log; exit 1
+
+      - name: Postman (newman)
+        run: npx -y newman run Bizti-SpringBoot.postman_collection.json
+
+      - name: Reiniciar backend con base limpia
+        working-directory: beta_1_Bizti
+        run: |
+          pkill -f beta_1_Bizti-0.0.1-SNAPSHOT.jar || true; sleep 3
+          nohup java -jar target/beta_1_Bizti-0.0.1-SNAPSHOT.jar --spring.datasource.url=jdbc:h2:mem:ci2 > ../backend2.log 2>&1 &
+          for i in $(seq 1 60); do curl -s localhost:8080/api/empresas >/dev/null && exit 0; sleep 2; done
+          exit 1
+
+      - name: Funciones del frontend (api.js) contra el backend real
+        run: node pruebas/prueba-front.mjs "$PWD/frontend-bizti"
+
+      - name: CORS desde localhost:5173
+        run: |
+          curl -s -o /dev/null -D cors.txt -X OPTIONS localhost:8080/api/retos \
+            -H 'Origin: http://localhost:5173' -H 'Access-Control-Request-Method: POST'
+          cat cors.txt
+          grep -qi 'access-control-allow-origin: http://localhost:5173' cors.txt
+
+      - name: Compilar frontend
+        working-directory: frontend-bizti
+        run: npm ci && npm run build
+
+      - name: Log del backend
+        if: always()
+        run: cat backend.log backend2.log 2>/dev/null | tail -150

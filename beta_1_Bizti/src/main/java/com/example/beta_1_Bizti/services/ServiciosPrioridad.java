@@ -34,6 +34,19 @@ public class ServiciosPrioridad {
         return this.repositorioPrioridad.findAll();
     }
 
+    // Modificar
+    public Prioridad modificarPrioridad(UUID id, Prioridad datosNuevos) {
+        Optional<Prioridad> prioridadBuscado = this.repositorioPrioridad.findById(id);
+        if (prioridadBuscado.isPresent()) {
+            Prioridad prioridadEncontrado = prioridadBuscado.get();
+            prioridadEncontrado.setNombre(datosNuevos.getNombre());
+            prioridadEncontrado.setNivel(datosNuevos.getNivel());
+            return this.repositorioPrioridad.save(prioridadEncontrado);
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró la prioridad");
+        }
+    }
+
     // Eliminar
     public boolean eliminarPrioridad(UUID id) {
         Optional <Prioridad> prioridadBuscado=this.repositorioPrioridad.findById(id);
@@ -41,7 +54,7 @@ public class ServiciosPrioridad {
             this.repositorioPrioridad.deleteById(id);
             return true;
         } else {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el usuario");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró la prioridad");
         }
     }
 }
