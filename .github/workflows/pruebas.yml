@@ -39,6 +39,13 @@ jobs:
       - name: Funciones del frontend (api.js) contra el backend real
         run: node pruebas/prueba-front.mjs "$PWD/frontend-bizti"
 
+      - name: Casos de la revision (codigos HTTP de hoy)
+        run: |
+          pkill -f beta_1_Bizti-0.0.1-SNAPSHOT.jar || true; sleep 3
+          (cd beta_1_Bizti && nohup java -jar target/beta_1_Bizti-0.0.1-SNAPSHOT.jar --spring.datasource.url=jdbc:h2:mem:ci3 > ../backend3.log 2>&1 &)
+          for i in $(seq 1 60); do curl -s localhost:8080/api/empresas >/dev/null && break; sleep 2; done
+          node pruebas/prueba-casos.mjs
+
       - name: CORS desde localhost:5173
         run: |
           curl -s -o /dev/null -D cors.txt -X OPTIONS localhost:8080/api/retos \
