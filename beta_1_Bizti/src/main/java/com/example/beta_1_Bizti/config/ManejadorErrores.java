@@ -43,7 +43,7 @@ public class ManejadorErrores {
                 .toList();
         String resumen = errores.stream().map(x -> x.get("campo") + ": " + x.get("mensaje"))
                 .collect(Collectors.joining("; "));
-        return cuerpo(HttpStatus.BAD_REQUEST, "Datos invalidos. " + resumen, req, errores);
+        return cuerpo(HttpStatus.BAD_REQUEST, "Datos inválidos. " + resumen, req, errores);
     }
 
     // 400: JSON mal formado o tipo incorrecto (texto donde va un numero, fecha invalida...)

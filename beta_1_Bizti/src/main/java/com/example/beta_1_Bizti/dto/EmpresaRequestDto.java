@@ -13,6 +13,6 @@ public record EmpresaRequestDto(
         @NotBlank @Size(max = 100) String sector,
         @NotBlank @Size(max = 100) String contacto,
         @NotBlank @Email @Size(max = 150) String correo,
-        @NotBlank @Pattern(regexp = "\\d{10}", message = "debe tener 10 digitos") String telefono,
+        @NotBlank @Pattern(regexp = "\\d{10}", message = "debe tener 10 dígitos") String telefono,
         @NotNull Boolean activa) {
 }

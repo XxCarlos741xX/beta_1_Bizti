@@ -16,7 +16,7 @@ await falla(registrarse(U, { nombre: 'X', correo: 'carlos@bizti.co', contrasena:
 const e = (await guardarFila(U, 'empresas', null, { nombre: 'Acme', nit: '900-1', sector: 'TI', contacto: 'Ana', correo: 'a@acme.co', telefono: '3001234567', activa: true })).datos
 ok(e.id && e.activa === true, 'crear empresa')
 await falla(guardarFila(U, 'empresas', null, { nombre: 'Otra', nit: '900-1', sector: 'TI', contacto: 'B', correo: 'b@x.co', telefono: '3009999999', activa: true }), 'NIT', 'NIT repetido da 409 con mensaje claro')
-await falla(guardarFila(U, 'empresas', null, { nombre: '', nit: '900-2', sector: 'TI', contacto: 'B', correo: 'malo', telefono: '12', activa: true }), 'Datos invalidos', 'campos inválidos dan 400 con la lista')
+await falla(guardarFila(U, 'empresas', null, { nombre: '', nit: '900-2', sector: 'TI', contacto: 'B', correo: 'malo', telefono: '12', activa: true }), 'Datos inválidos', 'campos inválidos dan 400 con la lista')
 const c = (await guardarFila(U, 'categorias', null, { nombre: 'Tec', descripcion: 'd1' })).datos
 const p = (await guardarFila(U, 'prioridades', null, { nombre: 'Alta', nivel: 1 })).datos
 const u2 = (await guardarFila(U, 'usuarios', null, { nombre: 'Eva', correo: 'eva@x.co', rol: 'evaluador', contrasena: 'secreta1' })).datos

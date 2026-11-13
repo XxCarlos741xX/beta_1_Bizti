@@ -2,12 +2,12 @@
 
 | Carpeta | Qué es | Puerto |
 |---|---|---|
-| `beta_1_Bizti/` | Backend Spring Boot (rama `develop`) con las correcciones y el módulo de **usuarios** | 8080 |
-| `frontend-bizti/` | Frontend React + Vite tomado de `Josesierra2/FrontBizti`, conectado a este backend | 5173 |
+| `beta_1_Bizti/` | API REST Spring Boot 4 (Java 17, H2) | 8080 |
+| `frontend-bizti/` | Frontend React + Vite (tomado de `Josesierra2/FrontBizti`) conectado a la API | 5173 |
 | `frontend/` | Frontend anterior de `develop` (sin cambios) | — |
-| `Bizti-SpringBoot.postman_collection.json` | Colección de Postman para probar la API | — |
-| `pruebas/prueba-front.mjs` | Prueba las funciones del front (`api.js`) contra el backend | — |
-| `.github/workflows/pruebas.yml` | GitHub Actions: compila, levanta el backend y corre Postman + la prueba del front | — |
+| `Bizti-SpringBoot.postman_collection.json` | Colección de Postman de la API v1 | — |
+| `pruebas/` | Prueba del front (`api.js`) y casos de validación contra el backend real | — |
+| `.github/workflows/pruebas.yml` | GitHub Actions: compila, corre JUnit, levanta la API y ejecuta Postman, las pruebas del front y los casos | — |
 
 ## Cómo correrlo (CMD)
 
@@ -26,60 +26,97 @@ npm install
 npm run dev
 ```
 
-Abrir <http://localhost:5173> → **Crear cuenta** (contraseña de mínimo 6 caracteres).
-Consola H2: <http://localhost:8080/h2-console> — JDBC URL `jdbc:h2:file:~/bizti-data/bizti`, usuario `sa`, sin contraseña.
-Los datos quedan en `C:\Users\<usuario>\bizti-data\`; para empezar de cero, apagar el backend y borrar esa carpeta.
+- Frontend: <http://localhost:5173> → **Crear cuenta** (contraseña de mínimo 6 caracteres).
+- Swagger: <http://localhost:8080/swagger-ui.html>
+- Consola H2: <http://localhost:8080/h2-console> — JDBC URL `jdbc:h2:file:~/bizti-data/bizti`, usuario `sa`, sin contraseña.
+  Los datos quedan en `C:\Users\<usuario>\bizti-data\`; para empezar de cero, apagar el backend y borrar esa carpeta.
 
-## Lo que se agregó: usuarios
+### Variables de entorno (opcionales)
 
-- `models/Usuario.java`: `id` (UUID), `nombre`, `correo` (único), `contrasena`, `rol`.
-  La contraseña se guarda con hash PBKDF2 y **nunca se devuelve** en el JSON.
-- `repository/IRepositorioUsuario.java` (con `findByCorreo`), `services/ServiciosUsuario.java`,
-  `controllers/UsuarioControlador.java` (CRUD en `/api/usuarios`).
-- `controllers/AuthControlador.java`:
-  - `POST /api/auth/registro` `{ nombre, correo, contrasena }` → crea el usuario con rol `usuario` (201).
-  - `POST /api/auth/login` `{ correo, contrasena }` → devuelve el usuario, o 401.
-- `Registro` queda relacionado con `Usuario` (`"usuario": { "id": "..." }`).
-- Al editar un usuario sin enviar contraseña, se conserva la actual.
+| Variable | Por defecto | Para qué |
+|---|---|---|
+| `BIZTI_DB_URL` | `jdbc:h2:file:~/bizti-data/bizti` | URL de la base |
+| `BIZTI_DB_USUARIO` / `BIZTI_DB_CLAVE` | `sa` / vacía | Credenciales de la base |
+| `BIZTI_CORS_ORIGENES` | `http://localhost:*,http://127.0.0.1:*` | Orígenes permitidos (en producción, el dominio del front; nunca `*`) |
+| `BIZTI_H2_CONSOLA` | `true` | Desactivar la consola H2 fuera de desarrollo |
 
-## Correcciones al código de `develop`
+## API v1
 
-1. No compilaba: `Registro` usaba `Usuario`, que no existía.
-2. `PrioridadControlador` tenía una clase `CategoriaControlador` anidada, recibía `Categoria` y llamaba a
-   métodos inexistentes (`Modificar`, `buscarPrioridadPorId()` sin id). Se reescribió;
-   `ServiciosPrioridad` no tenía `modificarPrioridad`.
-3. En todos los controladores las rutas eran `"{/id}"` → `"/{id}"`, y a `buscar` le faltaba `@GetMapping`
-   (no había ningún GET).
-4. `Reto`: columnas `"fecha inicio"` / `"fecha fin"` con espacio → `fecha_inicio` / `fecha_fin`;
-   no tenía getters/setters de `empresa`, `categoria` y `prioridad`.
-5. Referencias JSON mal emparejadas (`empresa_reto` vs `reto_empresa`, `@JsonBackReference` sobre listas)
-   → error 500 al listar. Ahora las listas `retos` llevan `@JsonIgnore` y el reto expone sus relaciones.
-6. `Empresa`: `sector` y `contacto` eran únicos (no dejaban dos empresas del mismo sector) y `contacto`
-   tenía 10 caracteres; ahora el único es `nit` y `contacto` tiene 100. `retos` no tenía getter/setter.
-7. Los `modificar` de Empresa, Reto y Registro solo actualizaban 1 o 2 campos; ahora actualizan todos.
-8. `ServiciosReto` / `ServiciosRegistros` buscan por `id` la empresa, categoría, prioridad, reto y usuario
-   que llegan en el JSON (404 si no existen).
-9. `config/ManejadorErrores.java`: dato repetido o borrar algo con datos asociados → **409** con mensaje (antes 500), y los 400/401/404 de los servicios siempre traen `message` (en Spring Boot 4 `server.error.include-message` no lo garantizaba).
-10. `config/CorsConfig.java`: permite al front en `localhost:*`.
-11. `application.properties`: H2 en archivo + consola H2 + mensajes de error en la respuesta.
-    Las pruebas (`src/test/resources`) usan H2 en memoria.
-12. Se quitó el import sin uso `UserConfigurations` y mensajes que decían "Usuario" donde no era.
+Todos los recursos están en `/api/v1/{recurso}` con `empresas`, `categorias`, `prioridades`, `usuarios`, `retos` y `registros`:
 
-## Cómo se conectó el front
+| Verbo | Ruta | Éxito | Errores |
+|---|---|---|---|
+| GET | `/api/v1/{recurso}?page=0&size=20&sort=nombre,asc` | 200, página `{ content, page }` | — |
+| GET | `/api/v1/{recurso}/{id}` | 200 | 400 (id no es UUID), 404 |
+| POST | `/api/v1/{recurso}` | **201** + `Location` | 400 (validación), 404 (relación inexistente), 409 (duplicado o regla) |
+| PUT | `/api/v1/{recurso}/{id}` | 200 | 400, 404, 409 |
+| DELETE | `/api/v1/{recurso}/{id}` | **204** | 404, 409 (tiene datos asociados) |
+| POST | `/api/v1/auth/registro` `{ nombre, correo, contrasena }` | 201 (rol `usuario`) | 400, 409 |
+| POST | `/api/v1/auth/login` `{ correo, contrasena }` | 200 | 400, 401 |
 
-Toda la traducción está en `frontend-bizti/src/api.js`:
+Formato de error (igual para todos):
 
-| Front | Spring |
-|---|---|
-| `empresaId`, `categoriaId`, `prioridadId` | `"empresa": { "id" }`, `"categoria": { "id" }`, `"prioridad": { "id" }` |
-| `fechaInicio`, `fechaFin` | `fecha_inicio`, `fecha_fin` |
-| `retoId`, `usuarioId`, `fechaRegistro` | `"reto": { "id" }`, `"usuario": { "id" }`, `fechaRegistros` |
-| carga inicial | un `GET` por módulo, en paralelo |
+```json
+{
+  "timestamp": "2026-11-12T19:50:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Datos inválidos. correo: no es un correo válido",
+  "path": "/api/v1/empresas",
+  "errors": [ { "campo": "correo", "mensaje": "no es un correo válido" } ]
+}
+```
 
-El modo demo (sin backend) sigue disponible en el login: `admin@bizti.co` / `admin1234`.
+Los cuerpos JSON y los ejemplos de cada recurso están en Swagger y en la colección de Postman.
+
+## Estructura del backend
+
+```
+controllers/  EmpresaControlador ... AuthControlador   HTTP: @Valid, códigos, Location
+services/     EmpresaService (interfaz) + EmpresaServiceImpl ...   negocio y @Transactional
+repository/   IRepositorioEmpresa, IRepositorioReto ...  JPA (@EntityGraph en retos y registros)
+models/       entidades JPA (solo mapean tablas; relaciones LAZY)
+dto/          XRequestDto (con validación) y XResponseDto (lo que sale)
+mapper/       Entidad <-> DTO
+exception/    RecursoNoEncontrado (404), ReglaNegocio (409), CredencialesInvalidas (401)
+config/       ManejadorErrores (único @RestControllerAdvice), CorsConfig
+```
+
+Flujo: Controlador → Servicio (interfaz) → Repositorio. Las entidades nunca salen de la API; la contraseña se guarda con hash PBKDF2 y no aparece en ningún DTO de salida.
+
+## Reglas de negocio
+
+- Empresa: NIT, correo y teléfono únicos; teléfono de 10 dígitos.
+- Usuario: correo único; contraseña de 6 a 72 caracteres; rol `usuario`, `evaluador` o `administrador`. Al editar sin contraseña se conserva la actual.
+- Prioridad: `nivel` desde 1.
+- Reto: `fecha_fin` no puede ser anterior a `fecha_inicio`.
+- No se puede eliminar una empresa, categoría o prioridad con retos, ni un reto o usuario con registros (409 con el motivo).
+
+## Cambios frente a `develop`
+
+**Integración y módulo de usuarios**
+- `Usuario` (modelo, repositorio, servicio, controlador) y `AuthControlador` (registro/login).
+- `frontend-bizti` conectado a la API; traducción de campos en `frontend-bizti/src/api.js`.
+
+**Correcciones de compilación y funcionamiento de `develop`**
+- `Registro` usaba `Usuario`, que no existía; `PrioridadControlador` tenía una clase anidada y métodos inexistentes.
+- Rutas `"{/id}"` → `"/{id}"`; faltaba `@GetMapping` (no había ningún GET).
+- Columnas `"fecha inicio"`/`"fecha fin"` con espacio; referencias JSON mal emparejadas (error 500 al listar).
+- `sector`/`contacto` de empresa eran únicos; los `modificar` solo actualizaban 1 o 2 campos.
+
+**Buenas prácticas (revisión de la API)**
+- DTOs de entrada y salida con Bean Validation; las entidades ya no se exponen.
+- Servicios con interfaz, inyección por constructor, `@Transactional` (`readOnly` en consultas), `orElseThrow`.
+- Excepciones propias y manejador global con formato uniforme; 400 con la lista de campos; sin stack trace.
+- `/api/v1`, `GET /{id}`, paginación, 201 + `Location`, 204.
+- Relaciones LAZY + `@EntityGraph` (sin N+1) y `open-in-view` desactivado.
+- Swagger (springdoc), CORS y credenciales por variables de entorno, mensajes de validación en español.
+- Nombres: `IReporsitorioReto` → `IRepositorioReto`, `iRepositorioEmpresa` → `IRepositorioEmpresa`, `ServiciosX` → `XService`/`XServiceImpl`.
 
 ## Pruebas
 
+- **JUnit:** `EmpresaServiceImplTest` (Mockito) y `EmpresaControladorTest` (`@WebMvcTest` + `MockMvc`), más `contextLoads`.
+  Se corren con `mvnw test` (usan H2 en memoria).
 - **Postman:** importar la colección y correrla con el *Runner* en orden (los ids se guardan solos).
-- **GitHub Actions:** cada push corre `.github/workflows/pruebas.yml` (compilación, `contextLoads`, Postman,
-  prueba del front contra el backend real, CORS y build del front).
+- **GitHub Actions:** en cada push corre todo lo anterior más `pruebas/prueba-front.mjs` (funciones del front contra la API real),
+  `pruebas/prueba-casos.mjs` (26 casos: válidos, obligatorios, límites, formatos, tipos y reglas), Swagger, CORS y el build del front.
